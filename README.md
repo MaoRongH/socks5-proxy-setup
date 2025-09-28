@@ -27,6 +27,42 @@ sudo ./setup_socks5_proxy.sh install
 sudo SOCKS_PORT=8080 SOCKS_USER=myuser SOCKS_PASS=mypass ./setup_dante_socks5.sh install
 ```
 
+## 端口配置详解
+
+### 默认端口设置
+- **SOCKS5端口**: 1080 (标准端口)
+- **需要开放的服务器端口**: TCP 1080 + SSH 22
+
+### 修改端口的三种方法
+
+#### 1. 安装时指定（推荐）
+```bash
+# 使用自定义端口8080
+sudo SOCKS_PORT=8080 ./setup_dante_socks5.sh install
+
+# 完整自定义配置
+sudo SOCKS_PORT=8080 SOCKS_USER=myuser SOCKS_PASS=mypass ./setup_dante_socks5.sh install
+```
+
+#### 2. 修改已安装服务的端口
+```bash
+# 1. 编辑配置文件
+sudo nano /etc/danted.conf
+# 修改: internal: eth0 port = 新端口号
+
+# 2. 更新防火墙
+sudo ufw allow 新端口号/tcp
+sudo ufw delete allow 1080/tcp
+
+# 3. 重启服务
+sudo systemctl restart danted
+```
+
+#### 3. 脚本中的关键位置
+- **第55行**: `SOCKS_PORT=${SOCKS_PORT:-1080}` - 默认端口
+- **第75行**: 配置文件端口设置
+- **第118行**: 防火墙端口开放
+
 ## 管理命令
 
 ```bash
