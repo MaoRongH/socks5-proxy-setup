@@ -39,25 +39,31 @@ check_root() {
 
 # 检测系统类型
 detect_os() {
-    if [[ -f /etc/redhat-release ]]; then
+    if [[ -f /etc/redhat-release ]] || [[ -f /etc/opencloudos-release ]] || command -v yum &> /dev/null || command -v dnf &> /dev/null; then
         OS="centos"
-        PM="yum"
-    elif [[ -f /etc/debian_version ]]; then
+        # 优先使用dnf，如果没有则使用yum
+        if command -v dnf &> /dev/null; then
+            PM="dnf"
+        else
+            PM="yum"
+        fi
+    elif [[ -f /etc/debian_version ]] || command -v apt &> /dev/null; then
         OS="debian"
         PM="apt"
     else
-        log_error "不支持的操作系统"
+        log_error "不支持的操作系统，仅支持RedHat系(CentOS/RHEL/OpenCloudOS)和Debian系(Ubuntu/Debian)"
         exit 1
     fi
-    log_info "检测到系统: $OS"
+    log_info "检测到系统: $OS，包管理器: $PM"
 }
 
 # 更新系统包
 update_system() {
     log_step "更新系统包管理器..."
     if [[ $OS == "centos" ]]; then
-        yum update -y
-        yum install -y epel-release
+        $PM update -y
+        # 尝试安装EPEL源（忽略错误，某些系统可能不需要）
+        $PM install -y epel-release 2>/dev/null || true
     else
         apt update && apt upgrade -y
     fi
@@ -67,7 +73,7 @@ update_system() {
 install_packages() {
     log_step "安装必要软件包..."
     if [[ $OS == "centos" ]]; then
-        yum install -y wget curl gcc make autoconf automake libtool openssl-devel
+        $PM install -y wget curl gcc make autoconf automake libtool openssl-devel
     else
         apt install -y wget curl build-essential autoconf automake libtool libssl-dev
     fi
